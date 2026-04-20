@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartShot — Creator Survey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --card: #16161f;
+      --accent: #ff3c5f;
+      --accent2: #ff8c42;
+      --accent3: #7b61ff;
+      --text: #f0f0f8;
+      --muted: #6b6b82;
+      --border: #2a2a38;
+      --success: #00e5a0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grain & glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(123,97,255,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 10% 80%, rgba(255,60,95,0.10) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 56px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,60,95,0.12);
+      border: 1px solid rgba(255,60,95,0.25);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(38px, 7vw, 64px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
+      font-weight: 300;
+    }
+
+    /* Progress */
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 10px;
+      margin-bottom: 48px;
+      overflow: hidden;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      width: 0%;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* Question Cards */
+    .question-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .question-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .question-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .question-card.answered::before {
+      opacity: 1;
+    }
+
+    .q-number {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .q-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 28px;
+      color: var(--text);
+    }
+
+    /* Options */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--surface);
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 400;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,60,95,0.08), rgba(123,97,255,0.08));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .option:hover {
+      border-color: rgba(255,60,95,0.4);
+      transform: translateX(4px);
+    }
+
+    .option:hover::before { opacity: 1; }
+
+    .option.selected {
+      border-color: var(--accent);
+      background: rgba(255,60,95,0.08);
+    }
+
+    .option.selected::before { opacity: 1; }
+
+    .option-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .option.selected .option-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .option.selected .option-dot::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    /* Slider */
+    .slider-container {
+      padding: 8px 0;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 10px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(255,60,95,0.5);
+      transition: transform 0.2s;
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .slider-value {
+      text-align: center;
+      margin-top: 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .slider-value span {
+      font-size: 14px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+    }
+
+    /* Text input */
+    .text-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s;
+      line-height: 1.6;
+    }
+
+    .text-input:focus {
+      border-color: rgba(255,60,95,0.5);
+    }
+
+    .text-input::placeholder { color: var(--muted); }
+
+    /* Name input */
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .text-field {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .text-field:focus { border-color: rgba(255,60,95,0.5); }
+    .text-field::placeholder { color: var(--muted); }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      margin-top: 32px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255,60,95,0.35);
+    }
+
+    .submit-btn:hover::before { opacity: 1; }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Success screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 80px 24px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(0,229,160,0.12);
+      border: 1px solid rgba(0,229,160,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+      font-size: 32px;
+    }
+
+    .success-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: var(--success);
+    }
+
+    .success-text {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* Results panel */
+    .results-panel {
+      margin-top: 48px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .results-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .result-row {
+      margin-bottom: 24px;
+    }
+
+    .result-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .result-bar-wrap {
+      background: var(--surface);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .result-bar {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .result-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Data table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(42,42,56,0.5);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 540px) {
+      .name-row { grid-template-columns: 1fr; }
+      .question-card { padding: 24px 20px; }
+      .wrapper { padding: 40px 16px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- SURVEY FORM -->
+  <div id="survey-form">
+
+    <div class="header">
+      <div class="badge"><div class="badge-dot"></div> Creator Research · SmartShot</div>
+      <h1>Help us build<br><span>the future of editing.</span></h1>
+      <p class="subtitle">We're building an AI tool that clones editing styles from any video and applies them to your footage instantly. Tell us about your editing life — it takes 2 minutes.</p>
+    </div>
+
+    <div class="progress-label">Your progress</div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <!-- Q1 -->
+    <div class="question-card" id="card-1">
+      <div class="q-number">Question 01 / 05</div>
+      <div class="q-text">How many hours per week do you spend editing videos?</div>
+      <div class="options" id="q1-options">
+        <label class="option" onclick="selectOption('q1', this, 'Less than 2 hours')">
+          <div class="option-dot"></div> Less than 2 hours
+        </label>
+        <label class="option" onclick="selectOption('q1', this, '2–5 hours')">
+          <div class="option-dot"></div> 2–5 hours
+        </label>
+        <label class="option" onclick="selectOption('q1', this, '5–10 hours')">
+          <div class="option-dot"></div> 5–10 hours
+        </label>
+        <label class="option" onclick="selectOption('q1', this, '10+ hours')">
+          <div class="option-dot"></div> 10+ hours — it's basically a second job
+        </label>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-card" id="card-2">
+      <div class="q-number">Question 02 / 05</div>
+      <div class="q-text">What's the biggest bottleneck in your editing process?</div>
+      <div class="options" id="q2-options">
+        <label class="option" onclick="selectOption('q2', this, 'Getting the transitions right')">
+          <div class="option-dot"></div> Getting the transitions right
+        </label>
+        <label class="option" onclick="selectOption('q2', this, 'Color grading and visual style')">
+          <div class="option-dot"></div> Color grading and visual style
+        </label>
+        <label class="option" onclick="selectOption('q2', this, 'Text, captions and overlays')">
+          <div class="option-dot"></div> Text, captions and overlays
+        </label>
+        <label class="option" onclick="selectOption('q2', this, 'Matching the overall vibe and feel')">
+          <div class="option-dot"></div> Matching the overall vibe and feel
+        </label>
+        <label class="option" onclick="selectOption('q2', this, 'All of the above — everything takes forever')">
+          <div class="option-dot"></div> All of the above — everything takes forever
+        </label>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-card" id="card-3">
+      <div class="q-number">Question 03 / 05</div>
+      <div class="q-text">Have you ever seen a video and thought "I want my edits to look exactly like that"?</div>
+      <div class="options" id="q3-options">
+        <label class="option" onclick="selectOption('q3', this, 'Yes, all the time')">
+          <div class="option-dot"></div> Yes, all the time
+        </label>
+        <label class="option" onclick="selectOption('q3', this, 'Yes, occasionally')">
+          <div class="option-dot"></div> Yes, occasionally
+        </label>
+        <label class="option" onclick="selectOption('q3', this, 'Not really')">
+          <div class="option-dot"></div> Not really
+        </label>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-card" id="card-4">
+      <div class="q-number">Question 04 / 05</div>
+      <div class="q-text">If a tool could analyze any reference video and auto-apply that exact editing style to your footage — how likely are you to use it?</div>
+      <div class="slider-container">
+        <input type="range" class="slider" id="q4-slider" min="1" max="10" value="5"
+               oninput="updateSlider(this.value)" onchange="answers['q4'] = this.value; updateProgress(); document.getElementById('card-4').classList.add('answered');" />
+        <div class="slider-labels">
+          <span>1 — Not at all</span>
+          <span>10 — Sign me up now</span>
+        </div>
+        <div class="slider-value" id="slider-display">5 <span>/ 10</span></div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-card" id="card-5">
+      <div class="q-number">Question 05 / 05</div>
+      <div class="q-text">What would you pay per month for a tool like this that saves you hours of editing time?</div>
+      <div class="options" id="q5-options">
+        <label class="option" onclick="selectOption('q5', this, 'Free only — I won\'t pay')">
+          <div class="option-dot"></div> Free only — I won't pay
+        </label>
+        <label class="option" onclick="selectOption('q5', this, '₹99–₹299 / month')">
+          <div class="option-dot"></div> ₹99–₹299 / month
+        </label>
+        <label class="option" onclick="selectOption('q5', this, '₹300–₹599 / month')">
+          <div class="option-dot"></div> ₹300–₹599 / month
+        </label>
+        <label class="option" onclick="selectOption('q5', this, '₹600–₹999 / month')">
+          <div class="option-dot"></div> ₹600–₹999 / month
+        </label>
+        <label class="option" onclick="selectOption('q5', this, '₹1000+ / month — if it actually works')">
+          <div class="option-dot"></div> ₹1000+ / month — if it actually works
+        </label>
+      </div>
+    </div>
+
+    <!-- Respondent info -->
+    <div class="question-card" id="card-info" style="animation-delay: 0.5s;">
+      <div class="q-number">Almost there 🎬</div>
+      <div class="q-text">Who are we talking to?</div>
+      <div class="name-row">
+        <div class="input-group">
+          <div class="input-label">Your name</div>
+          <input class="text-field" type="text" id="resp-name" placeholder="e.g. Rahul" oninput="updateProgress()" />
+        </div>
+        <div class="input-group">
+          <div class="input-label">Platform you create on</div>
+          <input class="text-field" type="text" id="resp-platform" placeholder="Instagram, YouTube..." oninput="updateProgress()" />
+        </div>
+      </div>
+      <div class="input-group">
+        <div class="input-label">Any thoughts you'd like to add? (optional)</div>
+        <textarea class="text-input" id="resp-extra" rows="3" placeholder="Tell us anything about your editing pain points..."></textarea>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitSurvey()" id="submit-btn">Submit My Responses →</button>
+
+  </div>
+
+  <!-- SUCCESS SCREEN -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon">🎬</div>
+    <div class="success-title">You're in. Thank you!</div>
+    <p class="success-text">Your responses are locked in. We're building SmartShot to give every creator their hours back — and you're the reason why.</p>
+
+    <div class="results-panel" id="results-panel">
+      <div class="results-title">📊 Survey Results So Far</div>
+      <div id="chart-area"></div>
+
+      <div style="margin-top: 32px;">
+        <div class="results-title" style="margin-bottom: 16px;">📋 All Responses</div>
+        <div style="overflow-x: auto;">
+          <table class="data-table" id="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Hours/Week</th>
+                <th>Bottleneck</th>
+                <th>Seen Style?</th>
+                <th>Likelihood</th>
+                <th>Would Pay</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- State ----
+  const answers = { q4: '5' };
+  const STORAGE_KEY = 'smartshot_survey_responses';
+
+  function loadResponses() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch { return []; }
+  }
+
+  function saveResponse(data) {
+    const all = loadResponses();
+    all.push(data);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    return all;
+  }
+
+  // ---- Animate cards in ----
+  document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, i) => {
+      setTimeout(() => card.classList.add('visible'), 100 + i * 100);
+    });
+    updateProgress();
+  });
+
+  // ---- Option selection ----
+  function selectOption(questionId, el, value) {
+    const container = el.parentElement;
+    container.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    answers[questionId] = value;
+    const card = el.closest('.question-card');
+    card.classList.add('answered');
+    updateProgress();
+  }
+
+  // ---- Slider ----
+  function updateSlider(val) {
+    document.getElementById('slider-display').innerHTML = `${val} <span>/ 10</span>`;
+    const slider = document.getElementById('q4-slider');
+    const pct = ((val - 1) / 9) * 100;
+    slider.style.background = `linear-gradient(90deg, #ff3c5f ${pct}%, #2a2a38 ${pct}%)`;
+    answers['q4'] = val;
+    document.getElementById('card-4').classList.add('answered');
+    updateProgress();
+  }
+
+  // ---- Progress bar ----
+  function updateProgress() {
+    const total = 5;
+    let filled = 0;
+    if (answers.q1) filled++;
+    if (answers.q2) filled++;
+    if (answers.q3) filled++;
+    if (answers.q4 && answers.q4 !== '5') filled++;
+    if (answers.q5) filled++;
+    const pct = (filled / total) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  // ---- Submit ----
+  function submitSurvey() {
+    const required = ['q1', 'q2', 'q3', 'q5'];
+    const missing = required.filter(k => !answers[k]);
+    if (missing.length > 0) {
+      alert('Please answer all 5 questions before submitting!');
+      return;
+    }
+
+    const name = document.getElementById('resp-name').value.trim() || 'Anonymous';
+    const platform = document.getElementById('resp-platform').value.trim() || '—';
+    const extra = document.getElementById('resp-extra').value.trim();
+
+    const entry = {
+      timestamp: new Date().toLocaleString('en-IN'),
+      name, platform,
+      q1: answers.q1,
+      q2: answers.q2,
+      q3: answers.q3,
+      q4: answers.q4,
+      q5: answers.q5,
+      extra
+    };
+
+    const all = saveResponse(entry);
+
+    document.getElementById('survey-form').style.display = 'none';
+    const s = document.getElementById('success-screen');
+    s.style.display = 'block';
+
+    renderResults(all);
+  }
+
+  // ---- Render results ----
+  function renderResults(all) {
+    // Bar chart for willingness to pay
+    const payMap = {};
+    all.forEach(r => { payMap[r.q5] = (payMap[r.q5] || 0) + 1; });
+    const maxCount = Math.max(...Object.values(payMap), 1);
+
+    let chartHTML = '<div style="margin-bottom: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500;">Willingness to Pay</div>';
+    Object.entries(payMap).forEach(([label, count]) => {
+      const pct = Math.round((count / maxCount) * 100);
+      chartHTML += `
+        <div class="result-row">
+          <div class="result-label">${label}</div>
+          <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+          <div class="result-val">${count} response${count > 1 ? 's' : ''}</div>
+        </div>`;
+    });
+
+    // Avg likelihood
+    const avgLikelihood = (all.reduce((s, r) => s + parseFloat(r.q4), 0) / all.length).toFixed(1);
+    chartHTML += `
+      <div style="margin-top: 24px; padding: 20px; background: var(--surface); border-radius: 14px; text-align: center;">
+        <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Avg Likelihood to Use (out of 10)</div>
+        <div style="font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; color: var(--accent);">${avgLikelihood}</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Based on ${all.length} response${all.length > 1 ? 's' : ''}</div>
+      </div>`;
+
+    document.getElementById('chart-area').innerHTML = chartHTML;
+
+    // Table
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    all.forEach((r, i) => {
+      tbody.innerHTML += `
+        <tr>
+          <td style="color: var(--muted)">${i + 1}</td>
+          <td>${r.name}</td>
+          <td>${r.q1}</td>
+          <td>${r.q2}</td>
+          <td>${r.q3}</td>
+          <td style="color: var(--accent); font-weight: 600">${r.q4}/10</td>
+          <td>${r.q5}</td>
+        </tr>`;
+    });
+
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.result-bar').forEach(b => {
+        const w = b.style.width;
+        b.style.width = '0%';
+        setTimeout(() => b.style.width = w, 50);
+      });
+    }, 100);
+  }
+
+  // Init slider style
+  updateSlider(5);
+</script>
+
+</body>
+</html>
